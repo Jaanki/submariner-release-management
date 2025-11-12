@@ -1,37 +1,61 @@
 # CLAUDE.md
 
-## Creating Releases
+## 1. Configure Downstream (Y-stream only)
 
-Files: `releases/0.20/{stage|prod}/submariner-0-20-{patch}-{stage|prod}-YYYYMMDD-NN.yaml`
+@.agents/workflows/configure-downstream.md
 
-Example: `releases/0.20/stage/submariner-0-20-2-stage-20250930-01.yaml`
+## 2. Create Upstream Release Branch (Y-stream only)
 
-1. Copy existing YAML from same environment (stage→stage, prod→prod)
-2. Update `metadata.name`, `spec.snapshot`, `spec.data.releaseNotes` (type/cves/issues)
-3. `make test-remote` then `make apply FILE=...`
-4. `make watch NAME=...`
+@.agents/workflows/create-release-branch.md
 
-## Finding Snapshots
+## 3. Fix Tekton Config PRs (Y-stream only)
 
-```bash
-oc get snapshots -n submariner-tenant --sort-by=.metadata.creationTimestamp
-oc get snapshot <name> -n submariner-tenant \
-  -o jsonpath='{.metadata.annotations.test\.appstudio\.openshift\.io/status}' \
-  | jq
-```
+@.agents/workflows/fix-tekton-prs.md
 
-Look for snapshots where all tests show `"status": "TestPassed"`.
+## 4. Update Tekton Tasks and Resolve EC Violations
 
-## Requirements
+@.agents/workflows/fix-ec-violations.md
 
-- Advisory types: RHSA (security, must have ≥1 CVE), RHBA (bug fix), RHEA (enhancement)
-- Component names must have version suffix: `lighthouse-coredns-0-20`
-- Issue IDs:
-  - Jira: `PROJECT-12345` (source: `issues.redhat.com`)
-  - Bugzilla: `1234567` (source: `bugzilla.redhat.com`)
+## 5. Scan for CVEs
 
-## Validation
+@.agents/workflows/scan-cves.md
 
-Releases: `make test` | `make test-remote` (requires cluster)
+## 6. Cut Upstream Release
 
-Markdown: `npx markdownlint-cli2 "**/*.md"`
+@.agents/workflows/cut-upstream-release.md
+
+## 7. Update Bundle SHAs
+
+@.agents/workflows/update-bundle-shas.md
+
+## 8. Create Downstream Stage Release
+
+@.agents/workflows/create-release.md
+
+## 9. Update FBC with Stage Release
+
+@.agents/workflows/update-fbc-stage.md
+
+## 10. Create FBC Stage Release
+
+@.agents/workflows/create-fbc-stage-release.md
+
+## 11. Share FBC with QE
+
+@.agents/workflows/share-fbc-with-qe.md
+
+## 12. Find and Verify Release Jiras
+
+@.agents/workflows/find-release-jiras.md
+
+## 13. Create Downstream Prod Release
+
+@.agents/workflows/create-prod-release.md
+
+## 14. Update FBC with Prod Release
+
+@.agents/workflows/update-fbc-prod.md
+
+## 15. Create FBC Prod Release
+
+@.agents/workflows/create-fbc-prod-release.md
