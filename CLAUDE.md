@@ -44,9 +44,9 @@
 
 @.agents/workflows/share-fbc-with-qe.md
 
-## 12. Find and Verify Release Jiras
+## 12. Add Release Notes
 
-@.agents/workflows/find-release-jiras.md
+@.agents/workflows/add-release-notes.md
 
 ## 13. Create Downstream Prod Release
 

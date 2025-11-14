@@ -1,0 +1,154 @@
+## Add Release Notes to Stage Release
+
+**When:** Y-stream (0.20 → 0.21) and Z-stream (0.20.1 → 0.20.2), after Step 11, during QE testing process
+
+**Goal:** Find CVEs (automatic) and notable bugs/features (manual), add to stage release YAML. QE verifies both code and release notes together.
+
+**Note:** Prod release (Step 13) will copy these QE-verified notes from stage.
+
+**Submariner ↔ ACM versions:** 0.X → 2.(X-7) (e.g., 0.20 → 2.13, 0.21 → 2.14)
+
+**Note for patch releases:** Use base ACM version in Jira queries, not patch version:
+- For 0.21.0, 0.21.1, 0.21.2 → all use `affectedVersion = "ACM 2.14.0"`
+- For 0.20.0, 0.20.1, 0.20.2 → all use `affectedVersion = "ACM 2.13.0"`
+
+## Jira CLI Setup (User Must Complete)
+
+**These steps must be done by the user before Claude can query Jira:**
+
+1. Create a Personal Access Token at https://issues.redhat.com/secure/ViewProfile.jspa?selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens
+2. Install jira-cli: `go install github.com/ankitpokhrel/jira-cli/cmd/jira@latest`
+3. Add token to shell config (e.g., `~/.zshrc`): `export JIRA_API_TOKEN="your-token"`
+4. Reload shell: `source ~/.zshrc`
+5. Initialize: `jira init --installation local --auth-type bearer --server https://issues.redhat.com --login YOUR_RH_USERNAME --project ACM --board none`
+
+**Claude: Test if setup works with:**
+```bash
+source ~/.zshrc && jira issue list -q 'project=ACM' --raw | jq -r '.[0].key // "Setup failed"'
+```
+
+If this returns an issue key (e.g., "ACM-12345"), setup is working. If not, ask user to complete setup steps above.
+
+**IMPORTANT for Claude:** Each Bash tool invocation is independent. Always prefix jira commands with `source ~/.zshrc &&` to load JIRA_API_TOKEN.
+
+## Workflow
+
+1. **Claude queries CVEs** (Security label)
+   - Extract CVE labels and components
+
+2. **Claude queries other issues** (non-Security)
+   - Sort by priority
+
+3. **Claude checks existing YAMLs** in `releases/0.X/*/`
+   - Check which issues already in this version's previous releases:
+   ```bash
+   grep -h "id: ACM-" releases/0.X/*/*.yaml 2>/dev/null | sed 's/.*id: //' | sort -u
+   ```
+   - Replace `0.X` with current major.minor version (e.g., `0.21` for 0.21.2 release)
+   - If no previous releases exist (empty directory), command returns empty (no filtering needed)
+   - Exclude from BOTH CVE list and other issues list
+   - Rationale: Issues already fixed/noted shouldn't appear in subsequent releases
+
+4. **Claude checks downstream release dates** at https://catalog.redhat.com/en/software/containers/rhacm2/submariner-rhel9-operator/65bd4446f4d2cf102701785a/history
+   - For Z-stream (0.21.2): Find previous 0.21.x release date (use as timeframe start in Step 5)
+   - For Y-stream (0.21.0): No previous 0.21.x exists, skip timeframe filtering
+   - Timeframe only applies to non-CVE issues (CVEs included regardless of date)
+
+5. **Claude presents filtered results**
+   - Run Part 1 (CVEs) and Part 2 (other issues) queries
+   - Exclude issues from Step 3 existing list
+   - Show CVEs with component mapping (all included)
+   - Show other issues with dates, note timeframe (e.g., "Since v0.21.0 on Aug 14")
+
+6. **Claude reviews unclear issues** in detail
+   - For non-obvious issues, fetch full details:
+   ```bash
+   source ~/.zshrc && jira issue list --raw -q 'project=ACM AND key in (ACM-XXXXX, ACM-YYYYY)' | jq -r '.[] | {key: .key, status: .fields.status.name, summary: .fields.summary, fixVersions: [.fields.fixVersions[]?.name], resolution: .fields.resolution.name}'
+   ```
+   - Check fixVersions starts with ACM series (0.21.x → "ACM 2.14", 0.20.x → "ACM 2.13")
+   - Include if: status="Closed" AND resolution="Done"
+   - Exclude if: status="In Progress" or "New" (not fixed yet)
+   - Fetch linked bugs (e.g., DFBUGS-XXXX) for context if needed
+
+7. **User selects** notable other issues (Blockers/Major, user-facing, fixed)
+
+8. **Claude builds releaseNotes section**
+   - Type: RHSA if CVEs present, else ask user (RHBA/RHEA)
+   - issues.fixed[]: All CVE issues + user-selected issues with source="issues.redhat.com"
+   - cves[]: CVE key + mapped component from Part 1
+
+9. **Claude adds releaseNotes to stage YAML**
+   - Read stage YAML from releases/0.X/stage/
+   - Add spec.data.releaseNotes section, show for review
+
+10. **Claude commits stage YAML** with release notes
+
+## Part 1: CVEs (Automatic - ALL go in release)
+
+**CVEs are what the release closes - all must be included.**
+
+**Note:** Filter query results to exclude issues already listed in Step 3 (existing releases).
+
+Query for CVEs affecting this release:
+
+```bash
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security) AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0"'
+```
+
+Extract CVE and component data:
+
+```bash
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security) AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0"' | jq -r '.[] | {
+  issue: .key,
+  cve: (.fields.labels[] | select(startswith("CVE-"))),
+  component: (.fields.labels[] | select(startswith("pscomponent:")) | sub("pscomponent:"; ""))
+}'
+```
+
+**Component name mapping:**
+
+Version suffix format uses X.Y (major.minor), not patch version:
+- For 0.21.0, 0.21.1, 0.21.2 → all use `-0-21`
+- For 0.20.0, 0.20.1, 0.20.2 → all use `-0-20`
+
+Mapping rules (replace `-0-X` with your version suffix):
+- `rhacm2/lighthouse-coredns-rhel9` → `lighthouse-coredns-0-X`
+- `rhacm2/lighthouse-agent-rhel9` → `lighthouse-agent-0-X`
+- `lighthouse-coredns-container` → `lighthouse-coredns-0-X`
+- `lighthouse-agent-container` → `lighthouse-agent-0-X`
+- `submariner-*-container` → `submariner-*-0-X`
+- `rhacm2/submariner-*-rhel9` → `submariner-*-0-X`
+
+**All CVE issues go into:**
+- `releaseNotes.issues.fixed[]` (with issue key)
+- `releaseNotes.cves[]` (with CVE key and component)
+
+## Part 2: Other Issues (Manual Selection)
+
+**Other issues are manually managed - user picks what's release-note worthy.**
+
+**Note:** Filter query results to exclude issues already listed in Step 3 (existing releases).
+
+Query for non-security issues:
+
+```bash
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0" AND labels not in (Security, SecurityTracking)'
+```
+
+Format for user review (sorted by priority, with dates):
+
+```bash
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0" AND labels not in (Security, SecurityTracking)' | jq -r 'sort_by(.fields.priority.id) | reverse | .[] | "\(.key) [\(.fields.priority.name)] (\(.fields.status.name)) Created: \(.fields.created[:10]) Updated: \(.fields.updated[:10]): \(.fields.summary)"'
+```
+
+**User reviews and selects** notable issues (Blockers, Major features, etc.) to include in `releaseNotes.issues.fixed[]`
+
+## MCP Servers (Future)
+
+**Not currently functional** with production Jira (issues.redhat.com). Official Atlassian MCP only works with UAT which has incomplete/stale data.
+
+**Future options when available:**
+- Official: `claude mcp add --transport sse atlassian https://mcp.atlassian.com/v1/sse`
+- Alternatives: https://github.com/redhat-community-ai-tools/jira-mcp, https://github.com/redhat-community-ai-tools/jira-mcp-snowflake
+
+**Status:** Check #forum-mcp Slack for production availability updates.
