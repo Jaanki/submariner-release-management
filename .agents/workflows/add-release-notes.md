@@ -22,7 +22,7 @@
 3. Add token to shell config (e.g., `~/.zshrc`): `export JIRA_API_TOKEN="your-token"`
 4. Reload shell: `source ~/.zshrc`
 5. Initialize:
-   `jira init --installation local --auth-type bearer --server https://issues.redhat.com --login YOUR_RH_USERNAME --project ACM --board none`
+   `jira init --installation local --auth-type bearer --server https://issues.redhat.com --login rhn-support-tiwillia --project ACM --board none`
 
 **Claude: Test if setup works with:**
 
