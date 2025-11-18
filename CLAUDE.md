@@ -44,7 +44,7 @@
 
 @.agents/workflows/share-fbc-with-qe.md
 
-## 12. Add Release Notes
+## 12. Add or Verify Release Notes
 
 @.agents/workflows/add-release-notes.md
 

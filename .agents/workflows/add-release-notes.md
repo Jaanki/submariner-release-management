@@ -1,12 +1,12 @@
-# Add Release Notes to Stage Release
+# Add or Verify Release Notes
 
-**When:** Y-stream (0.20 → 0.21) and Z-stream (0.20.1 → 0.20.2), after Step 11, during QE testing process
+**When:** Y-stream (0.20 → 0.21) and Z-stream (0.20.1 → 0.20.2)
 
 ## Process
 
-Find CVEs (automatic) and notable bugs/features (manual), add to stage release YAML. QE verifies both code and release notes together.
+Add complete release notes to stage YAML (if not already present) or verify existing notes. QE verifies both code and release notes together.
 
-**Note:** Prod release (Step 13) will copy these QE-verified notes from stage.
+**Note:** Release notes can be added in Step 8 (when creating stage) or Step 12 (during QE testing). This workflow documents how to create them.
 
 **Submariner ↔ ACM versions:** 0.X → 2.(X-7) (e.g., 0.20 → 2.13, 0.21 → 2.14)
 
@@ -86,6 +86,34 @@ If this returns an issue key (e.g., "ACM-12345"), setup is working. If not, ask 
    - issues.fixed[]: All CVE issues + user-selected issues with source="issues.redhat.com"
    - cves[]: CVE key + mapped component from Part 1
 
+   **Format - issues.fixed[]**: Sort by ID, add section headers to distinguish CVE vs non-CVE:
+
+   ```yaml
+   issues:
+     fixed:
+       # CVE Issues (N):
+       - id: ACM-XXXXX
+         source: issues.redhat.com
+       # Non-CVE Issues (N):
+       - id: ACM-YYYYY
+         source: issues.redhat.com
+   ```
+
+   **Format - cves[]**: Sort by CVE key. Add verification for each CVE with Test/Output/Required. If CVE affects
+   multiple components, repeat key/component entries:
+
+   ```yaml
+   cves:
+     # CVE-YYYY-NNNNN (ACM-XXXXX, ACM-YYYYY): FIXED
+     #   Test: command to verify fix
+     #   Output: expected output showing fixed version
+     #   Required: minimum version needed
+     - key: CVE-YYYY-NNNNN
+       component: component-a-0-X
+     - key: CVE-YYYY-NNNNN
+       component: component-b-0-X
+   ```
+
 9. **Claude adds releaseNotes to stage YAML**
    - Read stage YAML from releases/0.X/stage/
    - Add spec.data.releaseNotes section, show for review
@@ -97,6 +125,8 @@ If this returns an issue key (e.g., "ACM-12345"), setup is working. If not, ask 
 **CVEs are what the release closes - all must be included.**
 
 **Note:** Filter query results to exclude issues already listed in Step 3 (existing releases).
+
+**Note:** Adjust `affectedVersion` for your release (e.g., "ACM 2.14.0" for 0.21.x, "ACM 2.13.0" for 0.20.x).
 
 Query for CVEs affecting this release:
 
@@ -127,8 +157,11 @@ Mapping rules (replace `-0-X` with your version suffix):
 - `rhacm2/lighthouse-agent-rhel9` → `lighthouse-agent-0-X`
 - `lighthouse-coredns-container` → `lighthouse-coredns-0-X`
 - `lighthouse-agent-container` → `lighthouse-agent-0-X`
+- `rhacm2/submariner-addon-rhel9` → `submariner-addon-0-X`
 - `submariner-*-container` → `submariner-*-0-X`
 - `rhacm2/submariner-*-rhel9` → `submariner-*-0-X`
+- `nettest-container` → `nettest-0-X`
+- `subctl-container` → `subctl-0-X`
 
 **All CVE issues go into:**
 
@@ -140,6 +173,8 @@ Mapping rules (replace `-0-X` with your version suffix):
 **Other issues are manually managed - user picks what's release-note worthy.**
 
 **Note:** Filter query results to exclude issues already listed in Step 3 (existing releases).
+
+**Note:** Adjust `affectedVersion` for your release (e.g., "ACM 2.14.0" for 0.21.x, "ACM 2.13.0" for 0.20.x).
 
 Query for non-security issues:
 

@@ -20,6 +20,18 @@ Run CVE workflow (from each repo's CLAUDE.md on devel) on release-0.X branch for
 
 **TODO:** Update RPM lockfiles to fix RPM package CVEs.
 
+### Addon Go Toolchain
+
+Fix Go toolchain CVEs by updating `Dockerfile.konflux` builder image.
+
+**Repo:** <https://github.com/stolostron/submariner-addon>
+**Local:** `~/go/src/stolostron/submariner-addon`
+
+```bash
+skopeo list-tags docker://brew.registry.redhat.io/rh-osbs/openshift-golang-builder | \
+  jq -r '.Tags[] | select(contains("el9"))' | sort -Vr | head -10
+```
+
 ## Done When
 
 All components/repos scanned. CVE report presented (sorted by severity). User triages and approves.
@@ -41,6 +53,8 @@ Scan all 9 components (replace 0-X with version, e.g., 0-21):
 - nettest-0-X
 - subctl-0-X
 - submariner-bundle-0-X (no Clair results expected)
+
+**Note:** submariner-addon is in a separate snapshot - scan separately if needed.
 
 Requires: `oc login --web https://api.kflux-prd-rh02.0fk9.p1.openshiftapps.com:6443/`
 

@@ -4,14 +4,14 @@
 
 ## Process
 
-Create basic ReleasePlanAdmission YAML for stage release (without release notes).
+Create ReleasePlanAdmission YAML for stage release with complete release notes.
 
 **Repo:** <https://github.com/dfarrell07/submariner-release-management> (this repo)
 **Local:** `~/konflux/submariner-release-management`
 
 **Output:** `releases/0.X/stage/`
 
-**Note:** Release notes added to stage in Step 12, then prod created in Step 13
+**Note:** Prod release (Step 13) copies these QE-verified notes from stage
 
 ### Finding Snapshots
 
@@ -27,10 +27,9 @@ Look for snapshots where all tests show `"status": "TestPassed"`.
 ### Creating Release YAML
 
 1. Copy existing stage YAML
-2. Update `metadata.name` and `spec.snapshot`
-3. Remove `spec.data.releaseNotes` section if present (from copied YAML)
-4. `make test-remote` then `make apply FILE=...`
-5. `make watch NAME=...`
+2. Update `metadata.name`, `spec.snapshot` (use `TODO` if not ready), and `spec.data.releaseNotes`
+3. `make test-remote` then `make apply FILE=...`
+4. `make watch NAME=...`
 
 ### Requirements
 

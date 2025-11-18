@@ -9,7 +9,7 @@ Deploy tested code with QE-verified release notes to production.
 ### Workflow
 
 1. **Read verified stage YAML**
-   - Stage YAML already has verified release notes from Step 12
+   - Stage YAML has QE-verified release notes
    - Located in `releases/0.X/stage/submariner-0-X-Y-stage-*.yaml`
 
 2. **Create prod YAML by copying stage**
