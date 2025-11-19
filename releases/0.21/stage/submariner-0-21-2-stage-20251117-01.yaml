@@ -8,7 +8,7 @@ metadata:
     release.appstudio.openshift.io/author: 'dfarrell07'
 spec:
   releasePlan: submariner-release-plan-stage-0-21
-  snapshot: TODO
+  snapshot: submariner-0-21-dtb95
   data:
     releaseNotes:
       type: RHSA
