@@ -126,18 +126,33 @@ If this returns an issue key (e.g., "ACM-12345"), setup is working. If not, ask 
 
 **Note:** Filter query results to exclude issues already listed in Step 3 (existing releases).
 
-**Note:** Adjust `affectedVersion` for your release (e.g., "ACM 2.14.0" for 0.21.x, "ACM 2.13.0" for 0.20.x).
-
-Query for CVEs affecting this release:
+**Note:** Adjust versions for your release. First, find existing fixVersion values:
 
 ```bash
-source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security) AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0"'
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse)' --paginate 100 | jq -r '[.[] | .fields.fixVersions[]?.name | select(startswith("Submariner") or startswith("ACM"))] | unique | sort[]'
+```
+
+Then construct the query:
+
+- For 0.21.x releases:
+  - affectedVersion: `"ACM 2.14.0"` (always base version)
+  - fixVersion IN: Include existing versions like `"Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1"`
+- For 0.20.x releases:
+  - affectedVersion: `"ACM 2.13.0"`
+  - fixVersion IN: Include existing versions like `"Submariner 0.20.2", "ACM 2.13.0"`
+
+**Important:** JQL `fixVersion` field requires exact matches. Use `IN` operator with all existing patch versions.
+
+Query for CVEs affecting this release (checks BOTH affectedVersion and fixVersion):
+
+```bash
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security) AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND (affectedVersion = "ACM 2.14.0" OR fixVersion in ("Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1"))'
 ```
 
 Extract CVE and component data:
 
 ```bash
-source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security) AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0"' | jq -r '.[] | {
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security) AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND (affectedVersion = "ACM 2.14.0" OR fixVersion in ("Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1"))' | jq -r '.[] | {
   issue: .key,
   cve: (.fields.labels[] | select(startswith("CVE-"))),
   component: (.fields.labels[] | select(startswith("pscomponent:")) | sub("pscomponent:"; ""))
@@ -174,18 +189,29 @@ Mapping rules (replace `-0-X` with your version suffix):
 
 **Note:** Filter query results to exclude issues already listed in Step 3 (existing releases).
 
-**Note:** Adjust `affectedVersion` for your release (e.g., "ACM 2.14.0" for 0.21.x, "ACM 2.13.0" for 0.20.x).
+**Note:** Adjust versions for your release (same as Part 1):
 
-Query for non-security issues:
+- For 0.21.x releases:
+  - affectedVersion: `"ACM 2.14.0"`
+  - fixVersion IN: `"Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1"` (adjust based on existing versions)
+- For 0.20.x releases:
+  - affectedVersion: `"ACM 2.13.0"`
+  - fixVersion IN: `"Submariner 0.20.2", "ACM 2.13.0"` (adjust based on existing versions)
+
+Query for non-security issues (checks BOTH affectedVersion and fixVersion):
 
 ```bash
-source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0" AND labels not in (Security, SecurityTracking)'
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND (affectedVersion = "ACM 2.14.0" OR fixVersion in ("Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1")) AND (labels is EMPTY OR labels not in (Security, SecurityTracking))'
 ```
+
+**Note:** Query includes both `affectedVersion` and `fixVersion` (with IN operator for exact matches) because some
+issues are only tagged with fixVersion (e.g., ACM-25262). This ensures we don't miss customer-facing issues. The
+`labels is EMPTY OR` clause ensures issues with no labels (like ACM-25262) are not excluded.
 
 Format for user review (sorted by priority, with dates):
 
 ```bash
-source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND affectedVersion = "ACM 2.14.0" AND labels not in (Security, SecurityTracking)' | jq -r 'sort_by(.fields.priority.id) | reverse | .[] | "\(.key) [\(.fields.priority.name)] (\(.fields.status.name)) Created: \(.fields.created[:10]) Updated: \(.fields.updated[:10]): \(.fields.summary)"'
+source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND (affectedVersion = "ACM 2.14.0" OR fixVersion in ("Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1")) AND (labels is EMPTY OR labels not in (Security, SecurityTracking))' | jq -r 'sort_by(.fields.priority.id) | reverse | .[] | "\(.key) [\(.fields.priority.name)] (\(.fields.status.name)) Created: \(.fields.created[:10]) Updated: \(.fields.updated[:10]): \(.fields.summary)"'
 ```
 
 **User reviews and selects** notable issues (Blockers, Major features, etc.) to include in `releaseNotes.issues.fixed[]`
