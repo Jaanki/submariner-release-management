@@ -27,8 +27,10 @@ spec:
             source: issues.redhat.com
           - id: ACM-25170
             source: issues.redhat.com
-          # Non-CVE Issues (1):
+          # Non-CVE Issues (2):
           - id: ACM-22541
+            source: issues.redhat.com
+          - id: ACM-25262
             source: issues.redhat.com
       cves:
         # CVE-2025-47907 (ACM-24534): WIP
