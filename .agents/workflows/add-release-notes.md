@@ -1,6 +1,6 @@
 # Add or Verify Release Notes
 
-**When:** Y-stream (0.20 → 0.21) and Z-stream (0.20.1 → 0.20.2)
+**When:** After Step 11, during QE testing process
 
 ## Process
 

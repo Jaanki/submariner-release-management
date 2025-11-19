@@ -40,9 +40,9 @@
 
 @.agents/workflows/create-fbc-stage-release.md
 
-## 11. Share FBC with QE
+## 11. Share Stage Releases with QE
 
-@.agents/workflows/share-fbc-with-qe.md
+@.agents/workflows/share-with-qe.md
 
 ## 12. Add or Verify Release Notes
 
@@ -52,10 +52,6 @@
 
 @.agents/workflows/create-prod-release.md
 
-## 14. Update FBC with Prod Release
-
-@.agents/workflows/update-fbc-prod.md
-
-## 15. Create FBC Prod Release
+## 14. Create FBC Prod Release
 
 @.agents/workflows/create-fbc-prod-release.md

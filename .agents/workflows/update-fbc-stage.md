@@ -1,20 +1,25 @@
 # Update FBC with Stage Release
 
-**When:** Y-stream (0.20 → 0.21) and Z-stream (0.20.1 → 0.20.2), after stage release completes
+**When:** After stage release completes (Step 8)
 
 ## Process
 
-Add bundle to File-Based Catalog.
+**TODO:** Update catalog in FBC repo (`~/konflux/submariner-operator-fbc`) with bundle from Step 8.
 
-**Repo:** <https://github.com/stolostron/submariner-operator-fbc>
-**Local:** `~/konflux/submariner-operator-fbc`
-
-**Workflow:** README.md in that repo (`make add-bundle`)
-
-**TODO:** `make add-bundle` doesn't work - templates edited manually.
-
-**TODO:** Add `.agents/workflows/update-catalog.md` to FBC repo with actual workflow.
+See FBC repo for detailed catalog editing workflow (to be documented).
 
 ## Done When
 
-**TODO:** Add verification commands for updated FBC catalog.
+For each OCP version (4-16 through 4-20):
+
+```bash
+# 1. Check latest snapshot created after catalog update
+oc get snapshots -n submariner-tenant --sort-by=.metadata.creationTimestamp | grep "^submariner-fbc-4-XX" | tail -1
+
+# 2. Verify both tests pass
+SNAPSHOT="submariner-fbc-4-XX-xxxxx"
+oc get snapshot $SNAPSHOT -n submariner-tenant -o jsonpath='{.metadata.annotations.test\.appstudio\.openshift\.io/status}' | jq -r '.[] | "\(.scenario): \(.status)"'
+# Both must show: TestPassed
+```
+
+Record snapshot names for all OCP versions - needed for Step 10.
