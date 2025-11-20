@@ -102,9 +102,6 @@ Save to: `releases/fbc/4-XX/stage/submariner-fbc-4-XX-stage-YYYYMMDD-01.yaml`
 **Verifies:** Component SHAs (7 components × 4 sources: operator repo, registry bundle, FBC catalogs on GitHub, FBC snapshots on
 cluster). Ensures complete chain: operator repo → registry bundle → GitHub catalogs → cluster snapshots.
 
-**TODO:** Investigate registry bundle timing. Registry extraction fails at Step 12 (bundle not in
-registry.redhat.io until after Step 13 applies release). May need to split verification or run after Step 13.
-
 ```bash
 # 1. Fetch sources for component SHA verification
 OP_CSV=$(curl -sf https://raw.githubusercontent.com/submariner-io/submariner-operator/release-0.X/bundle/manifests/submariner.clusterserviceversion.yaml)
@@ -114,13 +111,22 @@ OP_CSV=$(curl -sf https://raw.githubusercontent.com/submariner-io/submariner-ope
 FBC_BUNDLE=$(curl -sf https://raw.githubusercontent.com/stolostron/submariner-operator-fbc/main/catalog-4-20/bundles/bundle-v0.X.Y.yaml)
 [ -z "$FBC_BUNDLE" ] && { echo "✗ ERROR: Failed to fetch FBC bundle from GitHub"; exit 1; }
 
-# Extract bundle image and fetch CSV from registry
-BUNDLE_IMAGE=$(echo "$FBC_BUNDLE" | grep "^image:" | head -1 | awk '{print $2}')
-[ -z "$BUNDLE_IMAGE" ] && { echo "✗ ERROR: Failed to extract bundle image from FBC catalog"; exit 1; }
+# Get bundle image from component snapshot (bundle not in registry.redhat.io until Step 13 prod release)
+COMPONENT_RELEASE=$(ls releases/0.X/stage/*.yaml 2>/dev/null | tail -1)
+[ -z "$COMPONENT_RELEASE" ] && { echo "✗ ERROR: No component stage release found in releases/0.X/stage/"; exit 1; }
 
-# Extract CSV from bundle in registry (requires oc)
-REG_CSV=$(oc image extract "$BUNDLE_IMAGE" --path /manifests/submariner.clusterserviceversion.yaml:- --confirm 2>/dev/null)
-[ -z "$REG_CSV" ] && { echo "✗ ERROR: Failed to extract CSV from bundle ($BUNDLE_IMAGE)"; exit 1; }
+COMPONENT_SNAPSHOT=$(awk '/^  snapshot:/ {print $2}' "$COMPONENT_RELEASE")
+[ -z "$COMPONENT_SNAPSHOT" ] && { echo "✗ ERROR: Failed to extract snapshot from $COMPONENT_RELEASE"; exit 1; }
+
+BUNDLE_IMAGE=$(oc get snapshot "$COMPONENT_SNAPSHOT" -n submariner-tenant -o jsonpath='{.spec.components[?(@.name=="submariner-bundle-0-X")].containerImage}')
+[ -z "$BUNDLE_IMAGE" ] && { echo "✗ ERROR: Failed to get bundle image from snapshot $COMPONENT_SNAPSHOT"; exit 1; }
+
+# Extract CSV from bundle (in Konflux workspace at quay.io/redhat-user-workloads)
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+oc image extract "$BUNDLE_IMAGE" --path /manifests/:$TMPDIR/ --confirm 2>/dev/null >/dev/null
+[ ! -f "$TMPDIR/submariner.clusterserviceversion.yaml" ] && { echo "✗ ERROR: Failed to extract CSV from bundle ($BUNDLE_IMAGE)"; exit 1; }
+REG_CSV=$(cat "$TMPDIR/submariner.clusterserviceversion.yaml")
 
 # 2. Get FBC snapshots (extract from YAMLs created in Section 1 - verify what we're releasing!)
 SNAPSHOTS=()
