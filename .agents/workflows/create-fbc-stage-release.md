@@ -102,6 +102,9 @@ Save to: `releases/fbc/4-XX/stage/submariner-fbc-4-XX-stage-YYYYMMDD-01.yaml`
 **Verifies:** Component SHAs (7 components × 4 sources: operator repo, registry bundle, FBC catalogs on GitHub, FBC snapshots on
 cluster). Ensures complete chain: operator repo → registry bundle → GitHub catalogs → cluster snapshots.
 
+**TODO:** Investigate registry bundle timing. Registry extraction fails at Step 12 (bundle not in
+registry.redhat.io until after Step 13 applies release). May need to split verification or run after Step 13.
+
 ```bash
 # 1. Fetch sources for component SHA verification
 OP_CSV=$(curl -sf https://raw.githubusercontent.com/submariner-io/submariner-operator/release-0.X/bundle/manifests/submariner.clusterserviceversion.yaml)
