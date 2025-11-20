@@ -78,14 +78,27 @@ cluster redirect to quay.io for actual image pulls.
 
 ## Share Prod FBC with QE
 
-**When:** After FBC prod releases complete (after Step 18)
+**When:** When all 5 FBC prod releases show Succeeded status
 
-### Extract Prod Index URLs
+### Check Release Status
 
-Agent extracts index URLs from completed prod releases:
+Verify all 5 FBC prod releases completed:
 
 ```bash
-echo "=== FBC Prod Index URLs for QE ==="
+oc get releases -n submariner-tenant --no-headers | \
+  grep "submariner-fbc-4-.*-prod.*Succeeded" | wc -l
+# Should show: 5
+```
+
+If not all completed, wait for remaining releases to finish.
+
+### Generate QE Message
+
+Extract index URLs and format message for QE:
+
+```bash
+echo "Submariner 0.X.Y Prod FBC Released"
+echo ""
 for VERSION in 16 17 18 19 20; do
   RELEASE=$(oc get releases -n submariner-tenant --no-headers | \
     grep "submariner-fbc-4-$VERSION-prod.*Succeeded" | tail -1 | awk '{print $1}')
@@ -96,43 +109,20 @@ for VERSION in 16 17 18 19 20; do
     PUBLIC_INDEX=$(echo "$INDEX" | \
       sed 's|registry-proxy.engineering.redhat.com/rh-osbs/iib-pub|registry.redhat.io/redhat/redhat-operator-index|')
     echo "OCP 4.$VERSION: $PUBLIC_INDEX"
-  else
-    echo "OCP 4.$VERSION: (release not complete yet)"
   fi
 done
 ```
 
-Example output (5 index URLs with SHA256 digests):
+Replace `0.X.Y` with actual version. Copy the output and share with QE.
 
-```text
-OCP 4.16: registry.redhat.io/redhat/redhat-operator-index@sha256:...
-OCP 4.17: registry.redhat.io/redhat/redhat-operator-index@sha256:...
-OCP 4.18: registry.redhat.io/redhat/redhat-operator-index@sha256:...
-OCP 4.19: registry.redhat.io/redhat/redhat-operator-index@sha256:...
-OCP 4.20: registry.redhat.io/redhat/redhat-operator-index@sha256:...
-```
+### Share with QE
 
-**Important:** Must wait for all 5 FBC prod releases to show "Succeeded" status before extracting URLs.
+**Communication:** Jira ticket OR Slack notification with the message generated above.
 
-### Share Prod with QE (Optional)
-
-**Note:** QE typically does NOT need direct prod index URLs. OpenShift clusters automatically use the certified
-operator catalog which includes these indexes.
-
-If QE requests verification:
-
-**Communication method:** Jira ticket OR Slack notification
-
-Provide either:
-
-1. **Direct index URLs** (from above) for manual CatalogSource creation
-2. **OperatorHub instructions:** "Submariner 0.X.Y available in OperatorHub for OCP 4.16-4.20 (allow 1hr for
-   propagation after releases complete)"
+**Note:** QE typically uses OperatorHub (automatic), but may want URLs for verification or custom CatalogSource testing.
 
 ### Prod Done When
 
 - All 5 FBC prod releases succeeded
-- QE notified (if requested)
-- Submariner 0.X.Y visible in production OperatorHub (verify on test cluster)
-
-**Complete:** 0.X.Y release fully published to production.
+- QE message shared with index URLs
+- **Submariner 0.X.Y production release COMPLETE**
