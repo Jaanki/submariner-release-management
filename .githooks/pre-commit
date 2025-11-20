@@ -1,0 +1,13 @@
+#!/bin/bash
+# Pre-commit hook: Run make test before allowing commit
+
+echo "Running make test before commit..."
+if ! make test; then
+  echo ""
+  echo "❌ make test failed. Commit aborted."
+  echo "Fix the errors above or use 'git commit --no-verify' to bypass."
+  exit 1
+fi
+
+echo "✅ make test passed. Proceeding with commit."
+exit 0
