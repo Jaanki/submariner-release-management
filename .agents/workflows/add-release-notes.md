@@ -62,7 +62,7 @@ If this returns an issue key (e.g., "ACM-12345"), setup is working. If not, ask 
 5. **Claude presents filtered results**
    - Run Part 1 (CVEs) and Part 2 (other issues) queries
    - Exclude issues from workflow step 3 existing list
-   - Show CVEs with component mapping (all included)
+   - Show CVEs with component mapping (excluding submariner-addon)
    - Show other issues with dates, note timeframe (e.g., "Since v0.21.0 on Aug 14")
 
 6. **Claude reviews unclear issues** in detail
@@ -81,8 +81,8 @@ If this returns an issue key (e.g., "ACM-12345"), setup is working. If not, ask 
 
 8. **Claude builds releaseNotes section**
    - Type: RHSA if CVEs present, else ask user (RHBA/RHEA)
-   - issues.fixed[]: All CVE issues + user-selected issues with source="issues.redhat.com"
-   - cves[]: CVE key + mapped component from Part 1
+   - issues.fixed[]: All CVE issues (except submariner-addon) + user-selected issues with source="issues.redhat.com"
+   - cves[]: CVE key + mapped component from Part 1 (excluding submariner-addon)
 
    **Format - issues.fixed[]**: Sort by ID, add section headers to distinguish CVE vs non-CVE:
 
@@ -161,6 +161,9 @@ source ~/.zshrc && jira issue list --raw -q 'project=ACM AND labels in (Security
 }'
 ```
 
+**Filter extracted results:** Exclude results where `component` is `rhacm2/submariner-addon-rhel9`. If a CVE affects both
+valid components AND submariner-addon, keep the valid component entries only.
+
 **Component name mapping:**
 
 Version suffix format uses X.Y (major.minor), not patch version:
@@ -174,13 +177,16 @@ Mapping rules (replace `-0-X` with your version suffix):
 - `rhacm2/lighthouse-agent-rhel9` → `lighthouse-agent-0-X`
 - `lighthouse-coredns-container` → `lighthouse-coredns-0-X`
 - `lighthouse-agent-container` → `lighthouse-agent-0-X`
-- `rhacm2/submariner-addon-rhel9` → `submariner-addon-0-X`
+- `rhacm2/submariner-addon-rhel9` → `submariner-addon-0-X` **(EXCLUDE - see note below)**
 - `submariner-*-container` → `submariner-*-0-X`
 - `rhacm2/submariner-*-rhel9` → `submariner-*-0-X`
 - `nettest-container` → `nettest-0-X`
 - `subctl-container` → `subctl-0-X`
 
-**All CVE issues go into:**
+**Note:** `submariner-addon` is built separately in ACM/MCE (stolostron/submariner-addon), NOT in the core Submariner operator
+release. Exclude any CVEs with `pscomponent:rhacm2/submariner-addon-rhel9` from operator release notes.
+
+**CVE issues go into:**
 
 - `releaseNotes.issues.fixed[]` (with issue key)
 - `releaseNotes.cves[]` (with CVE key and component)
@@ -215,6 +221,8 @@ Format for user review (sorted by priority, with dates):
 ```bash
 source ~/.zshrc && jira issue list --raw -q 'project=ACM AND (text ~ submariner OR text ~ lighthouse OR text ~ subctl OR text ~ nettest) AND (affectedVersion = "ACM 2.14.0" OR fixVersion in ("Submariner 0.21.2", "ACM 2.14.0", "ACM 2.14.1")) AND (labels is EMPTY OR labels not in (Security, SecurityTracking))' | jq -r 'sort_by(.fields.priority.id) | reverse | .[] | "\(.key) [\(.fields.priority.name)] (\(.fields.status.name)) Created: \(.fields.created[:10]) Updated: \(.fields.updated[:10]): \(.fields.summary)"'
 ```
+
+**Note:** Exclude submariner-addon issues from selection (built separately in ACM/MCE, not in operator release).
 
 **User reviews and selects** notable issues (Blockers, Major features, etc.) to include in `releaseNotes.issues.fixed[]`
 
