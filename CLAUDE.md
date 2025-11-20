@@ -87,3 +87,11 @@
 ## 18b. Check FBC Prod Release Builds
 
 @.agents/workflows/check-fbc-releases.md
+
+## 19. Share Prod FBC with QE
+
+@.agents/workflows/share-with-qe.md
+
+## 20. Update FBC Templates with Prod URLs (Optional)
+
+@.agents/workflows/update-fbc-templates-prod.md
