@@ -1,0 +1,51 @@
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: submariner-0-21-2-prod-20251120-01
+  namespace: submariner-tenant
+  labels:
+    release.appstudio.openshift.io/author: 'dfarrell07'
+spec:
+  releasePlan: submariner-release-plan-prod-0-21
+  snapshot: submariner-0-21-dtb95
+  data:
+    releaseNotes:
+      type: RHSA
+      issues:
+        fixed:
+          # CVE Issues (6):
+          - id: ACM-21728
+            source: issues.redhat.com
+          - id: ACM-21732
+            source: issues.redhat.com
+          - id: ACM-25149
+            source: issues.redhat.com
+          - id: ACM-25153
+            source: issues.redhat.com
+          - id: ACM-25166
+            source: issues.redhat.com
+          - id: ACM-25170
+            source: issues.redhat.com
+          # Non-CVE Issues (2):
+          - id: ACM-22541
+            source: issues.redhat.com
+          - id: ACM-25262
+            source: issues.redhat.com
+      cves:
+        # CVE-2025-47950 (ACM-21728, ACM-21732): FIXED
+        #   Test: git show 0d8d097:coredns/go.mod | grep 'coredns/coredns'
+        #   Output: github.com/coredns/coredns v1.12.4
+        #   Required: CoreDNS >= 1.12.2
+        - key: CVE-2025-47950
+          component: lighthouse-agent-0-21
+        - key: CVE-2025-47950
+          component: lighthouse-coredns-0-21
+        # CVE-2025-59530 (ACM-25149, ACM-25153, ACM-25166, ACM-25170): FIXED
+        #   Test: git show ffb326f:coredns/go.mod | grep quic-go
+        #   Output: github.com/quic-go/quic-go v0.54.1
+        #   Required: quic-go >= v0.54.1
+        - key: CVE-2025-59530
+          component: lighthouse-agent-0-21
+        - key: CVE-2025-59530
+          component: lighthouse-coredns-0-21
