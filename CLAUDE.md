@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-## 1. Configure Downstream (Y-stream only)
-
-@.agents/workflows/configure-downstream.md
-
-## 2. Create Upstream Release Branch (Y-stream only)
+## 1. Create Upstream Release Branch (Y-stream only)
 
 @.agents/workflows/create-release-branch.md
+
+## 2. Configure Downstream (Y-stream only)
+
+@.agents/workflows/configure-downstream.md
 
 ## 3. Fix Tekton Config PRs (Y-stream only)
 

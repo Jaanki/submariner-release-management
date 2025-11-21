@@ -1,6 +1,6 @@
 # Fix Tekton Config PRs
 
-**When:** Y-stream only (0.20 → 0.21), after branch creation
+**When:** Y-stream only (0.20 → 0.21), after branch creation and downstream config
 
 ## Process
 

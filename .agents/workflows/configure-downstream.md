@@ -2,6 +2,10 @@
 
 **When:** Y-stream only (0.20 → 0.21)
 
+**Prerequisites:** Step 1 (Create Upstream Release Branch) must complete first. This step triggers the Konflux bot to
+detect new branches and generate Tekton config PRs for Step 3. If branches don't exist, manual bot re-triggering via UI
+would be required.
+
 ## Process
 
 Configure Konflux for new Submariner version.
