@@ -18,7 +18,7 @@ Bot generates default `.tekton/` configs for new branches that need customizatio
 
 **Local:** `~/go/src/submariner-io/`
 
-**Workflow:** Each repo's `.agents/workflows/konflux-branch-setup.md`
+**Workflow:** Each repo's `.agents/workflows/konflux-component-setup.md`
 
 ## Done When
 
