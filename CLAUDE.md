@@ -8,9 +8,13 @@
 
 @.agents/workflows/configure-downstream.md
 
-## 3. Fix Tekton Config PRs (Y-stream only)
+## 3. Fix Tekton Config PRs - Components (Y-stream only)
 
 @.agents/workflows/fix-tekton-prs.md
+
+## 3b. Fix Tekton Config PRs - Bundle (Y-stream only)
+
+@.agents/workflows/fix-tekton-bundle.md
 
 ## 4. Update Tekton Tasks and Resolve EC Violations
 

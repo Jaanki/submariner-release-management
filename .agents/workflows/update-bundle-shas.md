@@ -1,16 +1,21 @@
 # Update Bundle SHAs
 
-**When:** Y-stream (0.20 → 0.21) and Z-stream (0.20.1 → 0.20.2), after upstream release
+**When:**
+
+- **Step 3b (Y-stream only):** Initial SHA update before bundle Konflux setup
+- **Step 7 (Y and Z stream):** Pre-release SHA update to get latest component builds
 
 ## Process
 
-Update bundle image SHAs in operator repo.
+Update bundle CSV with component image SHAs from Konflux snapshot builds.
 
 **Repo:** <https://github.com/submariner-io/submariner-operator>
 **Local:** `~/go/src/submariner-io/submariner-operator`
 
-**Workflow:** TBD
+**Workflow:** `.agents/workflows/bundle-sha-update.md`
+
+**Important:** Bundle must use `registry.redhat.io/rhacm2/*` URLs (not `quay.io/submariner/*`) for EC to pass. The workflow handles this correctly.
 
 ## Done When
 
-**TODO:** Add verification commands for updated bundle SHAs.
+Workflow verification script outputs: `✅ All SHAs verified - bundle matches snapshot!`

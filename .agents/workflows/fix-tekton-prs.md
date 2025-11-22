@@ -8,11 +8,13 @@ Bot generates default `.tekton/` configs for new branches that need customizatio
 
 **Repos with components** (all in <https://github.com/submariner-io>):
 
-- `submariner-operator` (2): submariner-operator, submariner-bundle
+- `submariner-operator` (1): submariner-operator
 - `submariner` (3): submariner-gateway, submariner-globalnet, submariner-route-agent
 - `lighthouse` (2): lighthouse-agent, lighthouse-coredns
 - `shipyard` (1): nettest
 - `subctl` (1): subctl
+
+**Note:** The `submariner-bundle` component is handled separately in Step 3b after component builds complete.
 
 **Local:** `~/go/src/submariner-io/`
 
@@ -29,3 +31,14 @@ Bot generates default `.tekton/` configs for new branches that need customizatio
   done
   # Should show file count for each repo (not "missing")
   ```
+
+- All component builds passing (wait ~15-30 min after PRs merge):
+
+  ```bash
+  oc get snapshots -n submariner-tenant --sort-by=.metadata.creationTimestamp | grep "submariner-0-X" | tail -5
+  # Pick latest snapshot, verify all components have passing tests
+  oc get snapshot <snapshot-name> -n submariner-tenant -o jsonpath='{.metadata.annotations.test\.appstudio\.openshift\.io/status}' | jq -r '.[] | "\(.scenario): \(.status)"'
+  # All should show: TestPassed
+  ```
+
+**Next:** Proceed to Step 3b for bundle setup.
