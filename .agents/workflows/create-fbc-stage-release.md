@@ -63,13 +63,17 @@ for VERSION in 16 17 18 19 20; do
     ((FAILED++)); continue
   fi
 
+  # Verify push event (PR snapshots fail EC quay_expiration policy)
+  EVENT_TYPE=$(oc get snapshot $SNAPSHOT -n submariner-tenant -o jsonpath='{.metadata.annotations.pac\.test\.appstudio\.openshift\.io/event-type}')
+  [ "$EVENT_TYPE" != "push" ] && { echo "4-$VERSION: ✗ Event '$EVENT_TYPE' (must be 'push')"; ((FAILED++)); continue; }
+
   # Verify all tests passed
   TESTS=$(oc get snapshot $SNAPSHOT -n submariner-tenant -o jsonpath='{.metadata.annotations.test\.appstudio\.openshift\.io/status}')
   [ -z "$TESTS" ] && { echo "4-$VERSION: ✗ No test status"; ((FAILED++)); continue; }
   echo "$TESTS" | jq empty 2>/dev/null || { echo "4-$VERSION: ✗ Invalid test JSON"; ((FAILED++)); continue; }
   echo "$TESTS" | jq -e '.[] | select(.status != "TestPassed")' >/dev/null 2>&1 && { echo "4-$VERSION: ✗ Tests failed"; ((FAILED++)); continue; }
 
-  echo "4-$VERSION: ✓ $SNAPSHOT (bundle: ${SNAPSHOT_BUNDLE_SHA:0:12})"
+  echo "4-$VERSION: ✓ $SNAPSHOT (push, bundle: ${SNAPSHOT_BUNDLE_SHA:0:12})"
 done
 
 [ $FAILED -gt 0 ] && { echo "✗ $FAILED snapshot(s) failed verification"; exit 1; }
