@@ -1,6 +1,6 @@
 # Submariner Release Management
 
-Release YAML files for Submariner releases via Konflux.
+Submariner release orchestration via Konflux.
 
 ## Usage
 
@@ -30,5 +30,3 @@ make watch NAME=submariner-0-20-2-stage-20250930-01
 |------------------|----------------------------------------------|---------------------------|
 | `/learn-release` | Learn the 20-step release workflow           | `/learn-release overview` |
 | `/release-ls`    | Check release status (requires `oc login`)   | `/release-ls 0.22.0`      |
-
-Component names must include version suffix (e.g., `lighthouse-coredns-0-20`).
