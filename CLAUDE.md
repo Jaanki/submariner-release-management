@@ -6,7 +6,9 @@
 
 ## 2. Configure Downstream (Y-stream only)
 
-@.agents/workflows/configure-downstream.md
+@/configure-downstream
+
+**Alternative:** @.agents/workflows/configure-downstream.md (manual workflow)
 
 ## 3. Fix Tekton Config PRs - Components (Y-stream only)
 
@@ -18,7 +20,9 @@
 
 ## 4. Update Tekton Tasks and Resolve EC Violations
 
-@.agents/workflows/fix-ec-violations.md
+@/konflux-ci-fix
+
+**Alternative:** @.agents/workflows/fix-ec-violations.md (manual workflow)
 
 ## 5. Scan for CVEs
 
@@ -58,7 +62,9 @@
 
 ## 12. Create FBC Stage Releases
 
-@.agents/workflows/create-fbc-stage-release.md
+@/create-fbc-release
+
+**Alternative:** @.agents/workflows/create-fbc-stage-release.md (manual workflow)
 
 ## 13. Apply FBC Stage Releases
 
@@ -86,7 +92,9 @@
 
 ## 17. Create FBC Prod Releases
 
-@.agents/workflows/create-fbc-prod-release.md
+@/create-fbc-release
+
+**Alternative:** @.agents/workflows/create-fbc-prod-release.md (manual workflow)
 
 ## 18. Apply FBC Prod Releases
 
