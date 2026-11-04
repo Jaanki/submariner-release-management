@@ -58,6 +58,31 @@ restore_clean_ref() {
   }
 }
 
+# Permit resetting a repair branch only when its content is already upstream.
+# Patch IDs ignore meaningful whitespace; a merge must leave the upstream tree unchanged.
+# Custom drivers can discard changes, so require review instead of trusting them.
+# Run in the target repo. Args: repair branch, fresh upstream ref.
+check_fix_branch_reusable() {
+  local fix_branch="$1" base_ref="$2" merged_tree upstream_tree fix_tree driver_status=0
+  git show-ref --verify --quiet "refs/heads/$fix_branch" || return 0
+  git merge-base --is-ancestor "$fix_branch" "$base_ref" && return 0
+  if upstream_tree=$(git rev-parse "$base_ref^{tree}") &&
+     fix_tree=$(git rev-parse "$fix_branch^{tree}"); then
+    [ "$fix_tree" = "$upstream_tree" ] && return 0
+    git config --get-regexp '^merge\..*\.driver$' >/dev/null 2>&1 || driver_status=$?
+    if [ "$driver_status" -eq 1 ] &&
+       merged_tree=$(git -c merge.renormalize=false -c merge.default=text \
+         merge-tree --write-tree "$base_ref" "$fix_branch" 2>/dev/null) &&
+       [ "$merged_tree" = "$upstream_tree" ]; then
+      return 0
+    fi
+  fi
+  echo "Existing $fix_branch contains work not confirmed upstream; it was preserved." >&2
+  echo "Inspect and resolve pending work before retrying." >&2
+  printf '  git -C %q show %q\n' "$PWD" "$fix_branch" >&2
+  return 1
+}
+
 # Save tracked/index and untracked work before an automated branch switch.
 # Prints only the new stash SHA (or nothing for a clean repo). On failure the
 # caller MUST stop before any checkout, particularly forced cleanup.

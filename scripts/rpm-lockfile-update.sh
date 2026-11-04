@@ -185,6 +185,12 @@ update_lockfiles() {
     [ "$DISPLAY_NAME" = "$REPO_NAME" ] && echo "==> $REPO_NAME" || echo "==> $DISPLAY_NAME (in $REPO_NAME)"
     echo "    Branch: $REPO_BRANCH"
 
+    # Override narrow clone refspecs to refresh release/devel and prune stale refs.
+    git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*' || {
+      REPOS_FAILED+=("$DISPLAY_NAME:fetch-failed")
+      continue
+    }
+
     local BRANCH_REF="origin/$REPO_BRANCH"
     git show-ref --verify --quiet "refs/remotes/$BRANCH_REF" || {
       BRANCH_REF="$REPO_BRANCH"
@@ -198,6 +204,11 @@ update_lockfiles() {
       { REPOS_SKIPPED+=("$DISPLAY_NAME:no-lockfiles"); continue; }
 
     local FIX_BRANCH="update-rpm-lockfiles-${REPO_VERSION}"
+
+    if ! check_fix_branch_reusable "$FIX_BRANCH" "$BRANCH_REF"; then
+      REPOS_FAILED+=("$DISPLAY_NAME:existing-fix-branch")
+      continue
+    fi
 
     # Remember where we are so we can restore after committing.
     local ORIGINAL_REF
@@ -277,7 +288,7 @@ update_lockfiles() {
     bash "$UPDATER" "${UPDATER_ARGS[@]}" > "$_lockfile_log" 2>&1 || LOCKFILE_EXIT=$?
     # Show status lines and "No sources" warnings; suppress dnf/pip/skopeo setup noise
     # and update-lockfile.sh's own manual-use "To commit/To push" instructions.
-    grep -E '^(--- |WARNING:rpm_lockfile: No sources)' "$_lockfile_log" || true
+    grep -E '^(--- |WARNING:rpm_lockfile:[[:space:]]*No sources)' "$_lockfile_log" || true
     # On failure, dump the full log so the problem is diagnosable.
     [ "$LOCKFILE_EXIT" -ne 0 ] && cat "$_lockfile_log" >&2
     if [ "$LOCKFILE_EXIT" -ne 0 ] && grep -qE 'Status code: 403|403 Forbidden' "$_lockfile_log"; then
@@ -448,10 +459,14 @@ main() {
     done
   fi
 
-  print_summary
+  print_summary || return $?
 
-  # review level: script stays in_progress. User must push the lockfile changes and
-  # wait for Konflux to rebuild, then explicitly mark complete via autorelease verifier.
+  # A fresh full no-op needs no PR. Changed or unprocessed repos must stay pending.
+  if [ -n "${TRACKER:-}" ] && [ "$COMPONENT_FILTER" = all ] &&
+     [ "${#REPOS_UPDATED[@]}" -eq 0 ] && [ "${#REPOS_FAILED[@]}" -eq 0 ] &&
+     [ "$problem_skips" -eq 0 ]; then
+    update_step "$VERSION" rpmLockfiles complete '{}' "$TRACKER"
+  fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
