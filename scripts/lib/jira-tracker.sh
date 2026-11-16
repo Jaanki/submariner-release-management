@@ -730,9 +730,11 @@ create_release_tracker() {
   desc_text=$(_generate_parent_description "$version" "$release_type" "$ACM_VERSION")
   create_json_file=$(mktemp --suffix=.json)
 
-  # Build create payload as JSON so we can include components (id=33720,
-  # "Multicluster Networking[ext]"). acli --from-json passes additionalAttributes
-  # keys straight through to the Jira REST API fields object.
+  # Build create payloads as JSON so we can include components. Jira does not
+  # copy a parent's component to its subtasks, so every issue sets it.
+  # acli --from-json passes additionalAttributes keys straight through to the
+  # Jira REST API fields object.
+  local component_id="33720" # "Multicluster Networking[ext]"
   # Description must be ADF; wrap each non-empty line as a paragraph node.
   local adf_paragraphs
   adf_paragraphs=$(printf '%s' "$desc_text" | while IFS= read -r line || [ -n "$line" ]; do
@@ -741,6 +743,7 @@ create_release_tracker() {
 
   jq -n \
     --arg summary "Release Submariner $version" \
+    --arg component "$component_id" \
     --argjson labels '["release-tracking","submariner","'"$version_label"'"]' \
     --argjson paragraphs "$adf_paragraphs" \
     '{
@@ -750,7 +753,7 @@ create_release_tracker() {
       labels: $labels,
       description: {type:"doc",version:1,content:$paragraphs},
       additionalAttributes: {
-        components: [{id:"33720"}],
+        components: [{id:$component}],
         customfield_10464: {id:"10608"}
       }
     }' > "$create_json_file"
@@ -809,6 +812,7 @@ create_release_tracker() {
       --arg type "Sub-task" \
       --arg parent "$parent_key" \
       --arg summary "$title" \
+      --arg component "$component_id" \
       --argjson labels '["release-tracking","'"$version_label"'"]' \
       --argjson paragraphs "$sub_adf_paragraphs" \
       --arg assignee "$sub_assignee" \
@@ -820,6 +824,7 @@ create_release_tracker() {
         labels: $labels,
         description: {type:"doc",version:1,content:$paragraphs},
         additionalAttributes: {
+          components: [{id:$component}],
           customfield_10464: {id:"10608"}
         }
       } + (if $assignee != "" then {assignee: $assignee} else {} end)' > "$sub_json_file"

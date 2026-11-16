@@ -244,8 +244,8 @@ _payloads=$(mktemp)
 assert_eq "create payloads: two parents and 34 subtasks" "$(jq -s length "$_payloads")" 36
 assert_eq "create payloads: Activity Type on every issue" \
   "$(jq -s 'all(.[]; .additionalAttributes.customfield_10464.id == "10608")' "$_payloads")" true
-assert_eq "create payloads: parent component retained" \
-  "$(jq -s 'all(.[] | select(.type == "Task"); .additionalAttributes.components == [{id:"33720"}])' "$_payloads")" true
+assert_eq "create payloads: component on every issue" \
+  "$(jq -s 'all(.[]; .additionalAttributes.components == [{id:"33720"}])' "$_payloads")" true
 assert_eq "create payloads: subtask parent retained" \
   "$(jq -s 'all(.[] | select(.type == "Sub-task"); .parentIssueId == "ACM-TEST")' "$_payloads")" true
 assert_eq "create payloads: release engineer assignee retained" \
