@@ -1,0 +1,37 @@
+---
+description: Track time, tokens, cost, agent, and issues for each release run
+alwaysApply: true
+---
+
+# Release run metrics
+
+For any Submariner release work in this checkout, keep the active metrics file
+under `plans/release-run-metrics/` up to date.
+
+## Which file
+
+- Prefer `plans/release-run-metrics/<version>-agent-run.md` once the version is
+  known (example: `0.25.1-agent-run.md`).
+- If only `plans/release-run-metrics/next-release-run.md` exists, rename it to
+  `<version>-agent-run.md` as soon as the version is chosen, then continue
+  editing that file.
+
+## What to record
+
+Update the file continuously (not only at the end) with:
+
+1. **Time** — start/end timestamps and wall-clock duration; add timeline rows
+   for major steps and waits (builds, QE, Conforma, publishes).
+2. **Tokens** — input/output/total tokens for the release chat(s) when known.
+3. **Dollars** — estimated or billed USD for those tokens, with the rate source.
+4. **Agent** — which Cursor agent/model ran the release (update if it changes).
+5. **Issues** — every meaningful failure, retry, auth/UI gap, script bug, or
+   process surprise, with impact and resolution.
+
+## How
+
+- Append timeline and incident rows as events happen.
+- Do not invent token or dollar figures; leave `_TBD_` until real data exists.
+- Do not store secrets, API keys, or entitlement material in the metrics file.
+- Mentions of this bookkeeping in chat should stay brief; the file is the
+  durable record.

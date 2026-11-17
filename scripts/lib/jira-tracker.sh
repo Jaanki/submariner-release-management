@@ -728,7 +728,7 @@ create_release_tracker() {
 
   local desc_text create_json_file
   desc_text=$(_generate_parent_description "$version" "$release_type" "$ACM_VERSION")
-  create_json_file=$(mktemp --suffix=.json)
+  create_json_file=$(mktemp "${TMPDIR:-/tmp}/jira-create-XXXXXX.json")
 
   # Build create payload as JSON so we can include components (id=33720,
   # "Multicluster Networking[ext]"). acli --from-json passes additionalAttributes
@@ -796,14 +796,16 @@ create_release_tracker() {
       printf '%s' "$line" | jq -Rc '{type:"paragraph",content:[{type:"text",text:.}]}'
     done | jq -sc '.')
 
-    # Assign subtasks: QE to specified engineer (or unassigned), all others to release engineer
+    # Assign only an explicit QE engineer. Do not put assignee "@me" in the
+    # create JSON: ACM rejects that account for Sub-task assignment ("cannot be
+    # assigned issues"), which previously left trackers with almost no children.
     if [ "$step_key" = "qeValidation" ]; then
       sub_assignee="${qe_assignee:-}"
     else
-      sub_assignee="@me"
+      sub_assignee=""
     fi
 
-    sub_json_file=$(mktemp --suffix=.json)
+    sub_json_file=$(mktemp "${TMPDIR:-/tmp}/jira-sub-XXXXXX.json")
     jq -n \
       --arg projectKey "ACM" \
       --arg type "Sub-task" \
@@ -828,16 +830,20 @@ create_release_tracker() {
       echo "[DRY RUN] Would create: Sub-task '$title' under $parent_key" >&2
       subtask_count=$((subtask_count + 1))
     else
-      local sub_output
-      if sub_output=$(_acli jira workitem create --from-json "$sub_json_file" --json </dev/null 2>/dev/null); then
+      local sub_output sub_err
+      sub_err=$(mktemp "${TMPDIR:-/tmp}/jira-sub-err-XXXXXX")
+      if sub_output=$(_acli jira workitem create --from-json "$sub_json_file" --json </dev/null 2>"$sub_err"); then
         local sub_key
         sub_key=$(echo "$sub_output" | jq -r '.key // empty' 2>/dev/null) || sub_key=""
         echo "  ✓ $title ($sub_key)" >&2
         subtask_count=$((subtask_count + 1))
       else
         echo "  ❌ Failed to create: $title" >&2
+        # Surface the acli error once so partial tracker creates are debuggable.
+        sed 's/^/     /' "$sub_err" >&2 || true
         failed_count=$((failed_count + 1))
       fi
+      rm -f "$sub_err"
     fi
 
     rm -f "$sub_json_file"
